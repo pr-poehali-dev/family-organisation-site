@@ -24,12 +24,12 @@ interface LeaderCabinetProps {
 }
 
 const initialMembers = [
-  { id: 1, name: 'Уильям Моррис', role: 'Патриарх', status: 'active', warnings: 0 },
-  { id: 2, name: 'Элизабет Моррис', role: 'Матриарх', status: 'active', warnings: 0 },
-  { id: 3, name: 'Джеймс Моррис', role: 'Лидер', status: 'active', warnings: 0 },
-  { id: 4, name: 'Сара Моррис', role: 'Секретарь', status: 'active', warnings: 1 },
-  { id: 5, name: 'Томас Моррис', role: 'Казначей', status: 'active', warnings: 0 },
-  { id: 6, name: 'Оливия Моррис', role: 'Участник', status: 'pending', warnings: 0 },
+  { id: 1, name: 'Уильям Моррис', role: 'Патриарх', status: 'active', warnings: 0, password: '' },
+  { id: 2, name: 'Элизабет Моррис', role: 'Матриарх', status: 'active', warnings: 0, password: '' },
+  { id: 3, name: 'Джеймс Моррис', role: 'Лидер', status: 'active', warnings: 0, password: '' },
+  { id: 4, name: 'Сара Моррис', role: 'Секретарь', status: 'active', warnings: 1, password: '' },
+  { id: 5, name: 'Томас Моррис', role: 'Казначей', status: 'active', warnings: 0, password: '' },
+  { id: 6, name: 'Оливия Моррис', role: 'Участник', status: 'pending', warnings: 0, password: '' },
 ];
 
 type CarStatus = 'available' | 'in-use' | 'reserved';
@@ -67,7 +67,9 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   // Members
   const [memberList, setMemberList] = useState(initialMembers);
   const [showAddMember, setShowAddMember] = useState(false);
-  const [newMember, setNewMember] = useState({ name: '', role: '' });
+  const [newMember, setNewMember] = useState({ name: '', role: '', password: '' });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showMemberPassword, setShowMemberPassword] = useState<number | null>(null);
   const [showWarningModal, setShowWarningModal] = useState<number | null>(null);
   const [warningText, setWarningText] = useState('');
   const [confirmDeleteMember, setConfirmDeleteMember] = useState<number | null>(null);
@@ -82,8 +84,9 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   // Member actions
   const addMember = () => {
     if (!newMember.name.trim()) return;
-    setMemberList([...memberList, { id: Date.now(), name: newMember.name, role: newMember.role || 'Участник', status: 'pending', warnings: 0 }]);
-    setNewMember({ name: '', role: '' });
+    setMemberList([...memberList, { id: Date.now(), name: newMember.name, role: newMember.role || 'Участник', status: 'pending', warnings: 0, password: newMember.password }]);
+    setNewMember({ name: '', role: '', password: '' });
+    setShowNewPassword(false);
     setShowAddMember(false);
   };
   const removeMember = (id: number) => { setMemberList(memberList.filter(m => m.id !== id)); setConfirmDeleteMember(null); };
@@ -246,9 +249,33 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                   <input placeholder="Имя участника" value={newMember.name} onChange={e => setNewMember({ ...newMember, name: e.target.value })} className="glass rounded-lg px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
                   <input placeholder="Роль (необязательно)" value={newMember.role} onChange={e => setNewMember({ ...newMember, role: e.target.value })} className="glass rounded-lg px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
                 </div>
+                <div className="mb-4">
+                  <label className="block text-white/60 font-body text-xs mb-1.5">Пароль для входа</label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      placeholder="Придумайте пароль участнику"
+                      value={newMember.password}
+                      onChange={e => setNewMember({ ...newMember, password: e.target.value })}
+                      className="w-full glass rounded-lg px-4 py-2.5 pr-11 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      <Icon name={showNewPassword ? 'EyeOff' : 'Eye'} size={15} />
+                    </button>
+                  </div>
+                  {newMember.password && (
+                    <p className="text-white/30 font-body text-xs mt-1.5 flex items-center gap-1">
+                      <Icon name="Shield" size={11} /> Пароль будет сохранён для этого участника
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-3">
                   <button onClick={addMember} className="px-5 py-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-lg hover:opacity-90">Добавить</button>
-                  <button onClick={() => setShowAddMember(false)} className="px-5 py-2 glass text-white/60 font-body text-sm rounded-lg hover:text-white/80">Отмена</button>
+                  <button onClick={() => { setShowAddMember(false); setShowNewPassword(false); }} className="px-5 py-2 glass text-white/60 font-body text-sm rounded-lg hover:text-white/80">Отмена</button>
                 </div>
               </div>
             )}
@@ -264,7 +291,29 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                     </div>
                     <span className={`text-xs font-body ${member.status === 'active' ? 'text-green-400' : 'text-yellow-400'}`}>{member.status === 'active' ? '● Активен' : '○ На рассмотрении'}</span>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 items-center">
+                    {member.password ? (
+                      <div className="relative group/pw">
+                        <button
+                          onClick={() => setShowMemberPassword(showMemberPassword === member.id ? null : member.id)}
+                          className="p-2 glass rounded-lg text-violet-400/60 hover:text-violet-400 hover:bg-violet-500/10 transition-all"
+                          title="Пароль"
+                        >
+                          <Icon name="KeyRound" size={14} />
+                        </button>
+                        {showMemberPassword === member.id && (
+                          <div className="absolute right-0 top-10 z-20 glass gradient-border rounded-xl px-4 py-3 min-w-[180px] animate-scale-in shadow-xl">
+                            <p className="text-white/40 font-body text-xs mb-1">Пароль участника</p>
+                            <p className="text-white font-body text-sm font-mono tracking-wider">{member.password}</p>
+                            <button onClick={() => setShowMemberPassword(null)} className="mt-2 text-white/30 font-body text-xs hover:text-white/60">Скрыть</button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded-lg text-white/15" title="Пароль не задан">
+                        <Icon name="KeyRound" size={14} />
+                      </div>
+                    )}
                     <button onClick={() => setShowWarningModal(member.id)} className="p-2 glass rounded-lg text-yellow-400/60 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all" title="Выговор"><Icon name="AlertTriangle" size={14} /></button>
                     <button onClick={() => setConfirmDeleteMember(member.id)} className="p-2 glass rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Удалить"><Icon name="Trash2" size={14} /></button>
                   </div>
