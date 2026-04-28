@@ -9,8 +9,9 @@ import ContactPage from './ContactPage';
 import LoginPage from './LoginPage';
 import LeaderCabinet from './LeaderCabinet';
 import EmployeeCabinet from './EmployeeCabinet';
+import GaragePage from './GaragePage';
 
-const pagesWithNav = ['home', 'history', 'members', 'events', 'gallery', 'contact', 'cabinet', 'leader-cabinet', 'employee-cabinet'];
+const pagesWithNav = ['home', 'history', 'members', 'events', 'garage', 'gallery', 'contact', 'cabinet', 'leader-cabinet', 'employee-cabinet'];
 
 export default function Index() {
   const [page, setPage] = useState('home');
@@ -21,6 +22,7 @@ export default function Index() {
       case 'history': return <HistoryPage />;
       case 'members': return <MembersPage />;
       case 'events': return <EventsPage />;
+      case 'garage': return <GaragePage />;
       case 'gallery': return <GalleryPage />;
       case 'contact': return <ContactPage />;
       case 'cabinet': return <LoginPage onNavigate={setPage} />;
@@ -48,9 +50,22 @@ export default function Index() {
               </div>
               <span className="font-display text-base text-white/60">Family Morris</span>
             </div>
-            <p className="text-white/30 font-body text-xs text-center">
-              © 2025 Family Morris Organization · Все права защищены
-            </p>
+            <div className="text-center">
+              <p className="text-white/30 font-body text-xs">
+                © 2025 Family Morris Organization · Все права защищены
+              </p>
+              <p className="text-white/20 font-body text-xs mt-1">
+                Разработчик:{' '}
+                <a
+                  href="https://vk.com/id1089780734"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-violet-400/60 hover:text-violet-400 transition-colors"
+                >
+                  Ethan_Santoro
+                </a>
+              </p>
+            </div>
             <div className="flex gap-4">
               {[
                 { label: 'Главная', page: 'home' },

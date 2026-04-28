@@ -11,6 +11,7 @@ const navItems = [
   { id: 'history', label: 'История' },
   { id: 'members', label: 'Участники' },
   { id: 'events', label: 'События' },
+  { id: 'garage', label: 'Автопарк' },
   { id: 'gallery', label: 'Фотографии' },
   { id: 'contact', label: 'Контакты' },
 ];
