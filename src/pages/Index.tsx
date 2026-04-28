@@ -15,27 +15,35 @@ const pagesWithNav = ['home', 'history', 'members', 'events', 'garage', 'gallery
 
 export default function Index() {
   const [page, setPage] = useState('home');
+  const [role, setRole] = useState<'leader' | 'employee' | null>(null);
+
+  const handleNavigate = (p: string) => {
+    if (p === 'leader-cabinet') setRole('leader');
+    if (p === 'employee-cabinet') setRole('employee');
+    if (p === 'home' || p === 'cabinet') setRole(null);
+    setPage(p);
+  };
 
   const renderPage = () => {
     switch (page) {
-      case 'home': return <HomePage onNavigate={setPage} />;
+      case 'home': return <HomePage onNavigate={handleNavigate} />;
       case 'history': return <HistoryPage />;
       case 'members': return <MembersPage />;
       case 'events': return <EventsPage />;
-      case 'garage': return <GaragePage />;
+      case 'garage': return <GaragePage isLeader={role === 'leader'} onNavigate={handleNavigate} />;
       case 'gallery': return <GalleryPage />;
       case 'contact': return <ContactPage />;
-      case 'cabinet': return <LoginPage onNavigate={setPage} />;
-      case 'leader-cabinet': return <LeaderCabinet onNavigate={setPage} />;
-      case 'employee-cabinet': return <EmployeeCabinet onNavigate={setPage} />;
-      default: return <HomePage onNavigate={setPage} />;
+      case 'cabinet': return <LoginPage onNavigate={handleNavigate} />;
+      case 'leader-cabinet': return <LeaderCabinet onNavigate={handleNavigate} />;
+      case 'employee-cabinet': return <EmployeeCabinet onNavigate={handleNavigate} />;
+      default: return <HomePage onNavigate={handleNavigate} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-background mesh-bg">
       {pagesWithNav.includes(page) && (
-        <Navbar currentPage={page} onNavigate={setPage} />
+        <Navbar currentPage={page} onNavigate={handleNavigate} />
       )}
       <main key={page} className="animate-fade-in">
         {renderPage()}
