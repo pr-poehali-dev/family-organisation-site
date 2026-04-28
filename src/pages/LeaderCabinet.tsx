@@ -1,5 +1,23 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
+
+type Photo = {
+  id: number;
+  url: string;
+  caption: string;
+  author: string;
+  album: string;
+  date: string;
+};
+
+const initialPhotos: Photo[] = [
+  { id: 1, url: 'https://cdn.poehali.dev/projects/163c87f7-5b8d-46b0-a849-f811b2313afb/files/4d4df31c-9bea-4f48-866a-1babd297fe5b.jpg', caption: 'Летний съезд 2024', author: 'Джеймс Моррис', album: 'Летний съезд 2024', date: 'Июнь 2024' },
+  { id: 2, url: 'https://cdn.poehali.dev/projects/163c87f7-5b8d-46b0-a849-f811b2313afb/files/0abf9031-de7d-434d-9fae-95c7600b180b.jpg', caption: 'Семейное древо Morris', author: 'Сара Моррис', album: 'Архив Morris', date: '2023' },
+  { id: 3, url: 'https://cdn.poehali.dev/projects/163c87f7-5b8d-46b0-a849-f811b2313afb/files/f4fa4f66-3b0c-45d9-8ab9-a1591366224f.jpg', caption: 'Герб семьи Morris', author: 'Уильям Моррис', album: 'Архив Morris', date: '1987' },
+];
+
+const photoAlbums = ['Летний съезд 2024', 'День основания', 'Зимнее собрание', 'Семейный пикник', 'Архив Morris', 'Портреты семьи'];
+const emptyPhotoForm = { caption: '', author: '', album: photoAlbums[0] };
 
 interface LeaderCabinetProps {
   onNavigate: (page: string) => void;
@@ -71,6 +89,32 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   const removeMember = (id: number) => { setMemberList(memberList.filter(m => m.id !== id)); setConfirmDeleteMember(null); };
   const issueWarning = (id: number) => { setMemberList(memberList.map(m => m.id === id ? { ...m, warnings: m.warnings + 1 } : m)); setShowWarningModal(null); setWarningText(''); };
 
+  // Photos
+  const [photoList, setPhotoList] = useState<Photo[]>(initialPhotos);
+  const [showAddPhoto, setShowAddPhoto] = useState(false);
+  const [photoForm, setPhotoForm] = useState(emptyPhotoForm);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFileName, setPhotoFileName] = useState('');
+  const [photoDragOver, setPhotoDragOver] = useState(false);
+  const [photoLightbox, setPhotoLightbox] = useState<Photo | null>(null);
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<number | null>(null);
+  const photoFileRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setPhotoFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+  const addPhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!photoPreview) return;
+    setPhotoList([{ id: Date.now(), url: photoPreview, caption: photoForm.caption || photoFileName || 'Без названия', author: photoForm.author || 'Лидер', album: photoForm.album, date: new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) }, ...photoList]);
+    setPhotoPreview(null); setPhotoFileName(''); setPhotoForm(emptyPhotoForm); setShowAddPhoto(false);
+  };
+  const deletePhoto = (id: number) => { setPhotoList(photoList.filter(p => p.id !== id)); setConfirmDeletePhoto(null); if (photoLightbox?.id === id) setPhotoLightbox(null); };
+
   // Car actions
   const addCar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +130,7 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
     { id: 'overview', label: 'Обзор', icon: 'LayoutDashboard' },
     { id: 'members', label: 'Состав', icon: 'Users' },
     { id: 'garage', label: 'Автопарк', icon: 'Car' },
+    { id: 'photos', label: 'Фотоархив', icon: 'Image' },
     { id: 'warnings', label: 'Выговора', icon: 'AlertTriangle' },
   ];
 
@@ -136,7 +181,7 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                 { label: 'Участников', value: memberList.length, color: 'from-blue-500 to-cyan-500', icon: 'Users' },
                 { label: 'Активных', value: memberList.filter(m => m.status === 'active').length, color: 'from-green-500 to-emerald-500', icon: 'CheckCircle' },
                 { label: 'Автомобилей', value: carList.length, color: 'from-violet-500 to-purple-600', icon: 'Car' },
-                { label: 'Выговоров', value: memberList.reduce((a, m) => a + m.warnings, 0), color: 'from-red-500 to-rose-600', icon: 'AlertTriangle' },
+                { label: 'Фотографий', value: photoList.length, color: 'from-pink-500 to-rose-500', icon: 'Image' },
               ].map((stat, i) => (
                 <div key={i} className="glass gradient-border rounded-2xl p-5">
                   <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.color} bg-opacity-20 flex items-center justify-center mb-3`}>
@@ -172,6 +217,9 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                   </button>
                   <button onClick={() => { setActiveTab('garage'); setShowAddCar(true); }} className="w-full py-2.5 px-4 glass text-white/70 font-body text-sm rounded-lg hover:bg-white/10 transition-all text-left flex items-center gap-3">
                     <Icon name="Car" size={16} /> Добавить автомобиль
+                  </button>
+                  <button onClick={() => { setActiveTab('photos'); setShowAddPhoto(true); }} className="w-full py-2.5 px-4 glass text-white/70 font-body text-sm rounded-lg hover:bg-white/10 transition-all text-left flex items-center gap-3">
+                    <Icon name="ImagePlus" size={16} /> Добавить фото
                   </button>
                   <button onClick={() => setActiveTab('warnings')} className="w-full py-2.5 px-4 glass text-white/70 font-body text-sm rounded-lg hover:bg-white/10 transition-all text-left flex items-center gap-3">
                     <Icon name="AlertTriangle" size={16} /> Выдать выговор
@@ -314,6 +362,63 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
           </div>
         )}
 
+        {/* ── PHOTOS ── */}
+        {activeTab === 'photos' && (
+          <div className="animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display text-2xl text-white">Фотоархив</h2>
+                <p className="text-white/40 font-body text-xs mt-1">{photoList.length} фотографий в архиве</p>
+              </div>
+              <button onClick={() => setShowAddPhoto(true)} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-lg hover:opacity-90 transition-opacity">
+                <Icon name="ImagePlus" size={14} /> Добавить фото
+              </button>
+            </div>
+
+            {photoList.length === 0 ? (
+              <div className="glass gradient-border rounded-2xl p-16 text-center">
+                <div className="text-5xl mb-3">📷</div>
+                <p className="text-white/40 font-body">Фотографий пока нет</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                {photoList.map(photo => (
+                  <div key={photo.id} className="relative group rounded-2xl overflow-hidden aspect-square cursor-pointer" onClick={() => setPhotoLightbox(photo)}>
+                    <img src={photo.url} alt={photo.caption} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-1 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <p className="text-white font-body text-sm font-medium leading-tight truncate">{photo.caption}</p>
+                      <p className="text-white/60 font-body text-xs mt-0.5">{photo.album} · {photo.date}</p>
+                    </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); setConfirmDeletePhoto(photo.id); }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/40"
+                    >
+                      <Icon name="Trash2" size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Album summary */}
+            <div className="glass gradient-border rounded-xl p-5">
+              <h3 className="font-body font-semibold text-white text-sm mb-3">По альбомам</h3>
+              <div className="flex flex-wrap gap-2">
+                {photoAlbums.map(album => {
+                  const count = photoList.filter(p => p.album === album).length;
+                  return (
+                    <div key={album} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+                      <span className="text-white/70 font-body text-xs">{album}</span>
+                      <span className="text-violet-400 font-body text-xs font-semibold">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── WARNINGS ── */}
         {activeTab === 'warnings' && (
           <div className="animate-fade-in">
@@ -437,6 +542,106 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                 <button type="button" onClick={() => setShowAddCar(false)} className="flex-1 py-3 glass text-white/60 font-body text-sm rounded-xl hover:text-white/80 transition-colors">Отмена</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD PHOTO MODAL ── */}
+      {showAddPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAddPhoto(false)} />
+          <div className="relative glass gradient-border rounded-2xl w-full max-w-lg animate-scale-in overflow-hidden">
+            <div className="flex items-center justify-between px-7 pt-6 pb-4 border-b border-white/8">
+              <div>
+                <h3 className="font-display text-2xl text-white">Добавить фото</h3>
+                <p className="text-white/40 font-body text-xs mt-0.5">Фотоархив Family Morris</p>
+              </div>
+              <button onClick={() => setShowAddPhoto(false)} className="text-white/30 hover:text-white/60 transition-colors"><Icon name="X" size={18} /></button>
+            </div>
+            <form onSubmit={addPhoto} className="px-7 py-6 space-y-4">
+              <div
+                className={`relative rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer ${photoDragOver ? 'border-violet-500 bg-violet-500/10' : photoPreview ? 'border-green-500/40 bg-green-500/5' : 'border-white/15 hover:border-white/30 bg-white/3'}`}
+                onDragOver={e => { e.preventDefault(); setPhotoDragOver(true); }}
+                onDragLeave={() => setPhotoDragOver(false)}
+                onDrop={e => { e.preventDefault(); setPhotoDragOver(false); const f = e.dataTransfer.files[0]; if (f) handlePhotoFile(f); }}
+                onClick={() => photoFileRef.current?.click()}
+              >
+                <input ref={photoFileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoFile(f); }} />
+                {photoPreview ? (
+                  <div className="relative">
+                    <img src={photoPreview} alt="preview" className="w-full h-48 object-cover rounded-2xl" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 hover:opacity-100 transition-opacity">
+                      <p className="text-white font-body text-sm flex items-center gap-2"><Icon name="RefreshCw" size={14} /> Заменить</p>
+                    </div>
+                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-green-500/80 text-white font-body text-xs flex items-center gap-1.5"><Icon name="Check" size={11} /> Готово</div>
+                  </div>
+                ) : (
+                  <div className="py-10 flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-600/20 border border-white/10 flex items-center justify-center">
+                      <Icon name="ImagePlus" size={24} className="text-violet-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-white/70 font-body text-sm font-medium">Нажмите или перетащите файл</p>
+                      <p className="text-white/30 font-body text-xs mt-1">PNG, JPG, WEBP</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-white/60 font-body text-xs mb-1.5">Подпись</label>
+                  <input placeholder="Название фото" value={photoForm.caption} onChange={e => setPhotoForm({ ...photoForm, caption: e.target.value })} className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/25 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                </div>
+                <div>
+                  <label className="block text-white/60 font-body text-xs mb-1.5">Автор</label>
+                  <input placeholder="Имя" value={photoForm.author} onChange={e => setPhotoForm({ ...photoForm, author: e.target.value })} className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/25 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-white/60 font-body text-xs mb-1.5">Альбом</label>
+                <select value={photoForm.album} onChange={e => setPhotoForm({ ...photoForm, album: e.target.value })} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 bg-transparent">
+                  {photoAlbums.map(a => <option key={a} value={a} className="bg-[#0e0f1e] text-white">{a}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={!photoPreview} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  <Icon name="Upload" size={15} /> Добавить в архив
+                </button>
+                <button type="button" onClick={() => setShowAddPhoto(false)} className="flex-1 py-3 glass text-white/60 font-body text-sm rounded-xl hover:text-white/80 transition-colors">Отмена</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── PHOTO LIGHTBOX ── */}
+      {photoLightbox && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={() => setPhotoLightbox(null)}>
+          <div className="relative max-w-3xl w-full animate-scale-in" onClick={e => e.stopPropagation()}>
+            <img src={photoLightbox.url} alt={photoLightbox.caption} className="w-full max-h-[75vh] object-contain rounded-2xl" />
+            <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/80 to-transparent rounded-b-2xl">
+              <p className="text-white font-body font-medium">{photoLightbox.caption}</p>
+              <p className="text-white/50 font-body text-sm mt-0.5">{photoLightbox.author} · {photoLightbox.album} · {photoLightbox.date}</p>
+            </div>
+            <button onClick={() => setPhotoLightbox(null)} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 flex items-center justify-center text-white/70 hover:text-white transition-all">
+              <Icon name="X" size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM DELETE PHOTO ── */}
+      {confirmDeletePhoto !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmDeletePhoto(null)} />
+          <div className="relative glass gradient-border rounded-2xl p-6 w-full max-w-sm animate-scale-in text-center">
+            <div className="text-4xl mb-3">🗑️</div>
+            <h3 className="font-display text-2xl text-white mb-2">Удалить фото?</h3>
+            <p className="text-white/50 font-body text-sm mb-5">{photoList.find(p => p.id === confirmDeletePhoto)?.caption}</p>
+            <div className="flex gap-3">
+              <button onClick={() => deletePhoto(confirmDeletePhoto)} className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-body text-sm rounded-lg hover:opacity-90">Удалить</button>
+              <button onClick={() => setConfirmDeletePhoto(null)} className="flex-1 py-2.5 glass text-white/60 font-body text-sm rounded-lg hover:text-white/80">Отмена</button>
+            </div>
           </div>
         </div>
       )}
