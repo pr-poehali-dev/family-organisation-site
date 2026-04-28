@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
+import { useMembers } from '@/store/members';
 
 type Photo = {
   id: number;
@@ -23,14 +24,7 @@ interface LeaderCabinetProps {
   onNavigate: (page: string) => void;
 }
 
-const initialMembers = [
-  { id: 1, name: 'Уильям Моррис', role: 'Патриарх', status: 'active', warnings: 0, password: '' },
-  { id: 2, name: 'Элизабет Моррис', role: 'Матриарх', status: 'active', warnings: 0, password: '' },
-  { id: 3, name: 'Джеймс Моррис', role: 'Лидер', status: 'active', warnings: 0, password: '' },
-  { id: 4, name: 'Сара Моррис', role: 'Секретарь', status: 'active', warnings: 1, password: '' },
-  { id: 5, name: 'Томас Моррис', role: 'Казначей', status: 'active', warnings: 0, password: '' },
-  { id: 6, name: 'Оливия Моррис', role: 'Участник', status: 'pending', warnings: 0, password: '' },
-];
+
 
 type CarStatus = 'available' | 'in-use' | 'reserved';
 type Car = {
@@ -64,8 +58,8 @@ const emptyCarForm = { name: '', year: '', plate: '', color: '', owner: '', stat
 export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Members
-  const [memberList, setMemberList] = useState(initialMembers);
+  // Members — общий стор
+  const [memberList, setMemberList] = useMembers();
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', role: '', password: '' });
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -84,7 +78,19 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   // Member actions
   const addMember = () => {
     if (!newMember.name.trim()) return;
-    setMemberList([...memberList, { id: Date.now(), name: newMember.name, role: newMember.role || 'Участник', status: 'pending', warnings: 0, password: newMember.password }]);
+    setMemberList([...memberList, {
+      id: Date.now(),
+      name: newMember.name,
+      role: newMember.role || 'Участник',
+      status: 'pending',
+      warnings: 0,
+      password: newMember.password,
+      generation: 3,
+      bio: '',
+      avatar: '👤',
+      badge: 'Участник',
+      badgeColor: 'from-blue-500 to-violet-600',
+    }]);
     setNewMember({ name: '', role: '', password: '' });
     setShowNewPassword(false);
     setShowAddMember(false);
