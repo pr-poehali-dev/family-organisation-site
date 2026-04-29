@@ -357,6 +357,15 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                         <Icon name="KeyRound" size={14} />
                       </div>
                     )}
+                    {member.status === 'pending' && (
+                      <button
+                        onClick={() => setMemberList(memberList.map(m => m.id === member.id ? { ...m, status: 'active' } : m))}
+                        className="p-2 glass rounded-lg text-green-400/60 hover:text-green-400 hover:bg-green-500/10 transition-all"
+                        title="Одобрить"
+                      >
+                        <Icon name="CheckCircle" size={14} />
+                      </button>
+                    )}
                     <button onClick={() => setShowWarningModal(member.id)} className="p-2 glass rounded-lg text-yellow-400/60 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all" title="Выговор"><Icon name="AlertTriangle" size={14} /></button>
                     <button onClick={() => setConfirmDeleteMember(member.id)} className="p-2 glass rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Удалить"><Icon name="Trash2" size={14} /></button>
                   </div>
