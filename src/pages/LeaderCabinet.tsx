@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
 import { useMembers } from '@/store/members';
+import { useApplications, updateApplicationStatus, type Application } from '@/store/applications';
 
 type Photo = {
   id: number;
@@ -135,9 +136,40 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   const removeCar = (id: number) => { setCarList(carList.filter(c => c.id !== id)); setConfirmDeleteCar(null); };
   const changeCarStatus = (id: number, status: CarStatus) => { setCarList(carList.map(c => c.id === id ? { ...c, status } : c)); setEditStatusCar(null); };
 
+  const [applications, reloadApps] = useApplications();
+  const [viewApp, setViewApp] = useState<Application | null>(null);
+
+  const approveApp = (app: Application) => {
+    updateApplicationStatus(app.id, 'approved');
+    setMemberList([...memberList, {
+      id: Date.now(),
+      name: app.name,
+      role: 'Участник',
+      status: 'active',
+      warnings: 0,
+      password: '',
+      generation: 3,
+      bio: app.about,
+      avatar: '👤',
+      badge: 'Участник',
+      badgeColor: 'from-blue-500 to-violet-600',
+    }]);
+    reloadApps();
+    setViewApp(null);
+  };
+
+  const rejectApp = (id: number) => {
+    updateApplicationStatus(id, 'rejected');
+    reloadApps();
+    setViewApp(null);
+  };
+
+  const pendingCount = applications.filter(a => a.status === 'pending').length;
+
   const tabs = [
     { id: 'overview', label: 'Обзор', icon: 'LayoutDashboard' },
     { id: 'members', label: 'Состав', icon: 'Users' },
+    { id: 'applications', label: 'Заявки', icon: 'ClipboardList', badge: pendingCount },
     { id: 'garage', label: 'Автопарк', icon: 'Car' },
     { id: 'photos', label: 'Фотоархив', icon: 'Image' },
     { id: 'warnings', label: 'Выговора', icon: 'AlertTriangle' },
@@ -178,6 +210,11 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
             >
               <Icon name={tab.icon as Parameters<typeof Icon>[0]['name']} fallback="Circle" size={14} />
               {tab.label}
+              {'badge' in tab && tab.badge > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-xs leading-none font-bold">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -326,6 +363,129 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── APPLICATIONS ── */}
+        {activeTab === 'applications' && (
+          <div className="animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display text-2xl text-white">Заявки на вступление</h2>
+                <p className="text-white/40 font-body text-xs mt-1">
+                  {applications.filter(a => a.status === 'pending').length} новых · {applications.length} всего
+                </p>
+              </div>
+            </div>
+
+            {applications.length === 0 ? (
+              <div className="glass gradient-border rounded-2xl p-16 text-center">
+                <div className="text-5xl mb-3">📋</div>
+                <p className="text-white/40 font-body">Заявок пока нет</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {applications.map(app => (
+                  <div key={app.id} className="glass gradient-border rounded-xl p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {app.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-body font-medium text-sm">{app.name}</span>
+                        <span className="text-white/40 font-body text-xs">{app.age} лет · {app.timezone}</span>
+                      </div>
+                      <span className={`text-xs font-body ${
+                        app.status === 'pending' ? 'text-yellow-400' :
+                        app.status === 'approved' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {app.status === 'pending' ? '○ На рассмотрении' : app.status === 'approved' ? '● Одобрена' : '✕ Отклонена'}
+                      </span>
+                      <span className="text-white/20 font-body text-xs ml-2">{app.createdAt}</span>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => setViewApp(app)}
+                        className="p-2 glass rounded-lg text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                        title="Просмотр"
+                      >
+                        <Icon name="Eye" size={14} />
+                      </button>
+                      {app.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => approveApp(app)}
+                            className="p-2 glass rounded-lg text-green-400/60 hover:text-green-400 hover:bg-green-500/10 transition-all"
+                            title="Одобрить"
+                          >
+                            <Icon name="Check" size={14} />
+                          </button>
+                          <button
+                            onClick={() => rejectApp(app.id)}
+                            className="p-2 glass rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            title="Отклонить"
+                          >
+                            <Icon name="X" size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Просмотр заявки */}
+            {viewApp && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setViewApp(null)} />
+                <div className="relative w-full max-w-xl max-h-[85vh] overflow-y-auto glass gradient-border rounded-3xl p-6 animate-fade-in">
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <h3 className="font-display text-xl text-white">Заявка: {viewApp.name}</h3>
+                      <p className="text-white/40 font-body text-xs">{viewApp.createdAt}</p>
+                    </div>
+                    <button onClick={() => setViewApp(null)} className="p-2 glass rounded-xl text-white/40 hover:text-white/70 transition-colors">
+                      <Icon name="X" size={16} />
+                    </button>
+                  </div>
+                  <div className="space-y-3 text-sm font-body">
+                    {[
+                      { label: 'Возраст', val: viewApp.age },
+                      { label: 'Часовой пояс', val: viewApp.timezone },
+                      { label: 'Время в игре / день', val: viewApp.hoursPerDay },
+                      { label: 'О себе', val: viewApp.about },
+                      { label: 'Что ищет в организации', val: viewApp.lookingFor },
+                      { label: 'Почему Family Morris', val: viewApp.whyJoin },
+                      { label: 'Смена фамилии в 3 дня', val: viewApp.willChangeSurname === 'yes' ? 'Да' : 'Нет' },
+                      { label: 'Согласен с правилами', val: viewApp.agreeRules === 'yes' ? 'Да' : 'Нет' },
+                      { label: 'Прошлые организации', val: viewApp.prevOrgs },
+                    ].map((row, i) => (
+                      <div key={i} className="flex gap-3 py-2 border-b border-white/5 last:border-0">
+                        <span className="text-white/40 w-40 flex-shrink-0">{row.label}</span>
+                        <span className="text-white/80">{row.val}</span>
+                      </div>
+                    ))}
+                    {viewApp.screenshotUrl && (
+                      <div className="pt-2">
+                        <p className="text-white/40 mb-2">Скрин статистики</p>
+                        <img src={viewApp.screenshotUrl} alt="Статистика" className="w-full rounded-xl object-contain max-h-60" />
+                      </div>
+                    )}
+                  </div>
+                  {viewApp.status === 'pending' && (
+                    <div className="flex gap-3 mt-5">
+                      <button onClick={() => approveApp(viewApp)} className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-body text-sm rounded-xl hover:opacity-90 flex items-center justify-center gap-2">
+                        <Icon name="Check" size={14} /> Одобрить
+                      </button>
+                      <button onClick={() => rejectApp(viewApp.id)} className="flex-1 py-2.5 glass text-red-400 border border-red-500/30 font-body text-sm rounded-xl hover:bg-red-500/10 flex items-center justify-center gap-2">
+                        <Icon name="X" size={14} /> Отклонить
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

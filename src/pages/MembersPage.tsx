@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useMembers } from '@/store/members';
+import ApplicationModal from '@/components/ApplicationModal';
 
 const genLabel: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III' };
 
 export default function MembersPage() {
   const [members] = useMembers();
   const [genFilter, setGenFilter] = useState(0);
+  const [showAppModal, setShowAppModal] = useState(false);
 
   const filtered = genFilter === 0
     ? members
     : members.filter(m => m.generation === genFilter);
 
   return (
+    <>
     <div className="min-h-screen pt-24 pb-20">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16 animate-fade-in">
@@ -98,11 +101,17 @@ export default function MembersPage() {
           <p className="text-white/50 font-body text-sm mb-5">
             Новые члены принимаются по приглашению лидера семьи или действующего участника.
           </p>
-          <button className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
-            Запросить приглашение
+          <button
+            onClick={() => setShowAppModal(true)}
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Подать заявку
           </button>
         </div>
       </div>
     </div>
+
+    {showAppModal && <ApplicationModal onClose={() => setShowAppModal(false)} />}
+    </>
   );
 }
