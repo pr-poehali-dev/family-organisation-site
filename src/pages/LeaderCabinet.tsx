@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
 import { useMembers } from '@/store/members';
 import { useApplications, updateApplicationStatus, type Application } from '@/store/applications';
+import { useOrgSettings } from '@/store/orgSettings';
 
 type Photo = {
   id: number;
@@ -68,6 +69,11 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   const [showWarningModal, setShowWarningModal] = useState<number | null>(null);
   const [warningText, setWarningText] = useState('');
   const [confirmDeleteMember, setConfirmDeleteMember] = useState<number | null>(null);
+
+  // Org settings
+  const [org, setOrg] = useOrgSettings();
+  const [orgEdit, setOrgEdit] = useState(false);
+  const [orgForm, setOrgForm] = useState(org);
 
   // Cars
   const [carList, setCarList] = useState<Car[]>(initialCars);
@@ -272,6 +278,64 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Настройки организации */}
+            <div className="glass gradient-border rounded-2xl p-6 mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-body font-semibold text-white">Настройки организации</h3>
+                {!orgEdit ? (
+                  <button onClick={() => { setOrgForm(org); setOrgEdit(true); }} className="flex items-center gap-1.5 px-3 py-1.5 glass rounded-lg text-white/60 font-body text-xs hover:text-white/80 transition-colors">
+                    <Icon name="Pencil" size={12} /> Изменить
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => { setOrg(orgForm); setOrgEdit(false); }} className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-xs rounded-lg hover:opacity-90">Сохранить</button>
+                    <button onClick={() => setOrgEdit(false)} className="px-3 py-1.5 glass text-white/50 font-body text-xs rounded-lg hover:text-white/70">Отмена</button>
+                  </div>
+                )}
+              </div>
+              {orgEdit ? (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/50 font-body text-xs mb-1.5">Год основания</label>
+                    <input
+                      value={orgForm.foundedYear}
+                      onChange={e => setOrgForm(f => ({ ...f, foundedYear: e.target.value }))}
+                      className="w-full glass rounded-lg px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white/50 font-body text-xs mb-1.5">Количество ежегодных встреч</label>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setOrgForm(f => ({ ...f, meetingsCount: Math.max(0, f.meetingsCount - 1) }))} className="p-2 glass rounded-lg text-white/60 hover:text-white transition-colors">
+                        <Icon name="Minus" size={14} />
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        value={orgForm.meetingsCount}
+                        onChange={e => setOrgForm(f => ({ ...f, meetingsCount: Math.max(0, Number(e.target.value)) }))}
+                        className="flex-1 glass rounded-lg px-4 py-2.5 text-white text-center font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                      />
+                      <button onClick={() => setOrgForm(f => ({ ...f, meetingsCount: f.meetingsCount + 1 }))} className="p-2 glass rounded-lg text-white/60 hover:text-white transition-colors">
+                        <Icon name="Plus" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="bg-white/5 rounded-xl px-4 py-3">
+                    <p className="text-white/40 font-body text-xs mb-0.5">Год основания</p>
+                    <p className="text-white font-body font-semibold">{org.foundedYear}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl px-4 py-3">
+                    <p className="text-white/40 font-body text-xs mb-0.5">Ежегодных встреч</p>
+                    <p className="text-white font-body font-semibold">{org.meetingsCount}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

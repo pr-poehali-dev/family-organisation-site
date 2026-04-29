@@ -1,4 +1,5 @@
 import { useMembers } from '@/store/members';
+import { useOrgSettings } from '@/store/orgSettings';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
@@ -6,6 +7,7 @@ interface HomePageProps {
 
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [members] = useMembers();
+  const [org] = useOrgSettings();
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -64,10 +66,10 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { value: '1987', label: 'Год основания' },
+              { value: org.foundedYear, label: 'Год основания' },
               { value: String(members.length), label: 'Членов семьи' },
               { value: String(new Set(members.map(m => m.generation)).size), label: 'Поколения' },
-              { value: '12', label: 'Ежегодных встреч' },
+              { value: String(org.meetingsCount), label: 'Ежегодных встреч' },
             ].map((stat, i) => (
               <div key={i} className="glass gradient-border rounded-2xl p-6 text-center glass-hover">
                 <div className="font-display text-4xl md:text-5xl gradient-text font-semibold mb-2">
