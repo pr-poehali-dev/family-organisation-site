@@ -94,7 +94,8 @@ export default function ApplicationModal({ onClose }: ApplicationModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto glass gradient-border rounded-3xl shadow-2xl animate-fade-in">
+      <div className="relative w-full max-w-2xl glass gradient-border rounded-3xl shadow-2xl animate-fade-in">
+        <div className="max-h-[90vh] overflow-y-auto rounded-3xl">
         {step === 'success' ? (
           <div className="p-12 text-center">
             <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-4xl">
@@ -228,6 +229,7 @@ export default function ApplicationModal({ onClose }: ApplicationModalProps) {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
