@@ -30,7 +30,7 @@ export default function Index() {
       case 'home': return <HomePage onNavigate={handleNavigate} />;
       case 'history': return <HistoryPage />;
       case 'members': return <MembersPage />;
-      case 'events': return <EventsPage />;
+      case 'events': return <EventsPage isLeader={role === 'leader'} memberId={memberId} />;
       case 'garage': return <GaragePage isLeader={role === 'leader'} onNavigate={handleNavigate} />;
       case 'gallery': return <GalleryPage />;
       case 'contact': return <ContactPage />;

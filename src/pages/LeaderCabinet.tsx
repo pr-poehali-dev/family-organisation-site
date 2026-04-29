@@ -3,6 +3,7 @@ import Icon from '@/components/ui/icon';
 import { useMembers } from '@/store/members';
 import { useApplications, updateApplicationStatus, type Application } from '@/store/applications';
 import { useOrgSettings } from '@/store/orgSettings';
+import { useEvents, type FamilyEvent } from '@/store/events';
 
 type Photo = {
   id: number;
@@ -172,10 +173,44 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
 
   const pendingCount = applications.filter(a => a.status === 'pending').length;
 
+  // Events
+  const [eventList, setEventList] = useEvents();
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventEditId, setEventEditId] = useState<number | null>(null);
+  const [confirmDeleteEvent, setConfirmDeleteEvent] = useState<number | null>(null);
+  const eventTypeOptions = [
+    { label: 'Ежегодный', color: 'from-blue-500 to-cyan-500' },
+    { label: 'Памятный', color: 'from-yellow-500 to-orange-500' },
+    { label: 'Совет', color: 'from-violet-500 to-purple-600' },
+    { label: 'Прошедший', color: 'from-gray-500 to-gray-600' },
+    { label: 'Прочее', color: 'from-pink-500 to-rose-500' },
+  ];
+  const emptyEventForm = { date: '', title: '', location: '', type: 'Ежегодный', desc: '', upcoming: true };
+  const [eventForm, setEventForm] = useState(emptyEventForm);
+
+  const openAddEvent = () => { setEventForm(emptyEventForm); setEventEditId(null); setShowEventForm(true); };
+  const openEditEvent = (ev: FamilyEvent) => {
+    setEventForm({ date: ev.date, title: ev.title, location: ev.location, type: ev.type, desc: ev.desc, upcoming: ev.upcoming });
+    setEventEditId(ev.id);
+    setShowEventForm(true);
+  };
+  const saveEvent = () => {
+    if (!eventForm.title.trim() || !eventForm.date.trim()) return;
+    const typeColor = eventTypeOptions.find(t => t.label === eventForm.type)?.color ?? 'from-blue-500 to-cyan-500';
+    if (eventEditId !== null) {
+      setEventList(eventList.map(e => e.id === eventEditId ? { ...e, ...eventForm, typeColor } : e));
+    } else {
+      setEventList([...eventList, { id: Date.now(), ...eventForm, typeColor }]);
+    }
+    setShowEventForm(false);
+  };
+  const deleteEvent = (id: number) => { setEventList(eventList.filter(e => e.id !== id)); setConfirmDeleteEvent(null); };
+
   const tabs = [
     { id: 'overview', label: 'Обзор', icon: 'LayoutDashboard' },
     { id: 'members', label: 'Состав', icon: 'Users' },
     { id: 'applications', label: 'Заявки', icon: 'ClipboardList', badge: pendingCount },
+    { id: 'events', label: 'События', icon: 'Calendar' },
     { id: 'garage', label: 'Автопарк', icon: 'Car' },
     { id: 'photos', label: 'Фотоархив', icon: 'Image' },
     { id: 'warnings', label: 'Выговора', icon: 'AlertTriangle' },
@@ -556,6 +591,117 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                       </button>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── EVENTS ── */}
+        {activeTab === 'events' && (
+          <div className="animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-display text-2xl text-white">Семейные события</h2>
+                <p className="text-white/40 font-body text-xs mt-1">{eventList.length} событий · {eventList.filter(e => e.upcoming).length} предстоящих</p>
+              </div>
+              <button onClick={openAddEvent} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-lg hover:opacity-90 transition-opacity">
+                <Icon name="Plus" size={14} /> Добавить
+              </button>
+            </div>
+
+            {eventList.length === 0 ? (
+              <div className="glass gradient-border rounded-2xl p-16 text-center">
+                <div className="text-5xl mb-3">📅</div>
+                <p className="text-white/40 font-body">Событий пока нет</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {eventList.map(ev => (
+                  <div key={ev.id} className={`glass gradient-border rounded-xl p-4 flex items-center gap-4 ${!ev.upcoming ? 'opacity-60' : ''}`}>
+                    <div className="text-center w-14 flex-shrink-0">
+                      <div className="font-display text-xl gradient-text font-semibold leading-none">{ev.date.split(' ')[0]}</div>
+                      <div className="text-white/40 font-body text-xs">{ev.date.split(' ').slice(1).join(' ')}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-body font-medium text-sm">{ev.title}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium text-white bg-gradient-to-r ${ev.typeColor}`}>{ev.type}</span>
+                      </div>
+                      <p className="text-white/40 font-body text-xs">📍 {ev.location}</p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button onClick={() => openEditEvent(ev)} className="p-2 glass rounded-lg text-blue-400/60 hover:text-blue-400 hover:bg-blue-500/10 transition-all" title="Редактировать"><Icon name="Pencil" size={14} /></button>
+                      <button onClick={() => setConfirmDeleteEvent(ev.id)} className="p-2 glass rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Удалить"><Icon name="Trash2" size={14} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Форма */}
+            {showEventForm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowEventForm(false)} />
+                <div className="relative w-full max-w-lg glass gradient-border rounded-3xl shadow-2xl animate-fade-in">
+                  <div className="max-h-[85vh] overflow-y-auto rounded-3xl p-6">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="font-display text-xl text-white">{eventEditId ? 'Редактировать событие' : 'Новое событие'}</h3>
+                      <button onClick={() => setShowEventForm(false)} className="p-2 glass rounded-xl text-white/40 hover:text-white/70 transition-colors"><Icon name="X" size={16} /></button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-white/60 font-body text-xs mb-1.5">Название *</label>
+                        <input value={eventForm.title} onChange={e => setEventForm(f => ({ ...f, title: e.target.value }))} placeholder="Летний семейный съезд" className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-white/60 font-body text-xs mb-1.5">Дата *</label>
+                          <input value={eventForm.date} onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))} placeholder="15 Июня 2026" className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                        <div>
+                          <label className="block text-white/60 font-body text-xs mb-1.5">Тип</label>
+                          <select value={eventForm.type} onChange={e => setEventForm(f => ({ ...f, type: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 bg-transparent">
+                            {eventTypeOptions.map(t => <option key={t.label} value={t.label} className="bg-gray-900">{t.label}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-white/60 font-body text-xs mb-1.5">Место</label>
+                        <input value={eventForm.location} onChange={e => setEventForm(f => ({ ...f, location: e.target.value }))} placeholder="Усадьба Моррис" className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                      </div>
+                      <div>
+                        <label className="block text-white/60 font-body text-xs mb-1.5">Описание</label>
+                        <textarea value={eventForm.desc} onChange={e => setEventForm(f => ({ ...f, desc: e.target.value }))} rows={3} placeholder="Описание события..." className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 resize-none" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => setEventForm(f => ({ ...f, upcoming: !f.upcoming }))} className={`w-10 h-5 rounded-full transition-all relative ${eventForm.upcoming ? 'bg-gradient-to-r from-blue-600 to-violet-600' : 'bg-white/20'}`}>
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${eventForm.upcoming ? 'left-5' : 'left-0.5'}`} />
+                        </button>
+                        <span className="text-white/60 font-body text-sm">Предстоящее событие</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 mt-5">
+                      <button onClick={saveEvent} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body font-medium rounded-xl hover:opacity-90">{eventEditId ? 'Сохранить' : 'Добавить'}</button>
+                      <button onClick={() => setShowEventForm(false)} className="px-5 py-3 glass text-white/60 font-body text-sm rounded-xl hover:text-white/80">Отмена</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Подтверждение удаления */}
+            {confirmDeleteEvent !== null && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setConfirmDeleteEvent(null)} />
+                <div className="relative glass gradient-border rounded-2xl p-6 w-full max-w-sm animate-fade-in text-center">
+                  <div className="text-4xl mb-3">🗓️</div>
+                  <h3 className="font-body font-semibold text-white mb-2">Удалить событие?</h3>
+                  <p className="text-white/50 font-body text-sm mb-5">Это действие нельзя отменить</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => deleteEvent(confirmDeleteEvent)} className="flex-1 py-2.5 bg-red-500/80 text-white font-body text-sm rounded-xl hover:bg-red-500">Удалить</button>
+                    <button onClick={() => setConfirmDeleteEvent(null)} className="flex-1 py-2.5 glass text-white/60 font-body text-sm rounded-xl hover:text-white/80">Отмена</button>
+                  </div>
                 </div>
               </div>
             )}
