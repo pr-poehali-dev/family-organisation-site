@@ -1,31 +1,57 @@
+import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { useMembers, type Member } from '@/store/members';
 
 interface EmployeeCabinetProps {
   onNavigate: (page: string) => void;
+  memberId?: number;
 }
 
 const myEvents = [
-  { title: 'Летний съезд 2025', date: '15 Июня 2025', status: 'upcoming' },
-  { title: 'День основания', date: '12 Сентября 2025', status: 'upcoming' },
-  { title: 'Весенний пикник', date: '3 Марта 2025', status: 'past' },
+  { title: 'Летний съезд 2026', date: '15 Июня 2026', status: 'upcoming' },
+  { title: 'День основания', date: '12 Сентября 2026', status: 'upcoming' },
+  { title: 'Зимнее собрание', date: '20 Декабря 2025', status: 'past' },
 ];
 
-export default function EmployeeCabinet({ onNavigate }: EmployeeCabinetProps) {
-  const profile = {
-    name: 'Сара Моррис',
-    role: 'Секретарь',
-    generation: 2,
-    joined: '1995',
-    email: 'sara@family-morris.org',
-    phone: '+7 (999) 234-56-78',
-    bio: 'Отвечаю за ведение семейного архива, организацию встреч и хранение важных документов. Горжусь своей ролью в поддержании истории семьи Morris.',
-    achievements: [
-      'Составила семейное древо 2020',
-      'Организовала 8 крупных встреч',
-      'Архив 500+ фотографий',
-    ],
-    warnings: 1,
+const genRoman: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III' };
+
+export default function EmployeeCabinet({ onNavigate, memberId }: EmployeeCabinetProps) {
+  const [members, setMembers] = useMembers();
+  const [editMode, setEditMode] = useState(false);
+
+  const member: Member | undefined = memberId
+    ? members.find(m => m.id === memberId)
+    : members.find(m => m.status === 'active') ?? members[0];
+
+  const [form, setForm] = useState<Partial<Member>>({});
+
+  if (!member) {
+    return (
+      <div className="min-h-screen pt-24 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/40 font-body">Профиль не найден</p>
+          <button onClick={() => onNavigate('home')} className="mt-4 text-blue-400 font-body text-sm hover:underline">На главную</button>
+        </div>
+      </div>
+    );
+  }
+
+  const openEdit = () => {
+    setForm({
+      name: member.name,
+      role: member.role,
+      bio: member.bio,
+      avatar: member.avatar,
+    });
+    setEditMode(true);
   };
+
+  const saveEdit = () => {
+    setMembers(members.map(m => m.id === member.id ? { ...m, ...form } : m));
+    setEditMode(false);
+  };
+
+  const avatarOptions = ['👤', '👩‍💼', '👨‍💼', '👩', '👨', '👵', '👴', '👩‍💻', '👨‍💻', '👷', '🧑‍🎨', '👩‍🏫'];
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -53,75 +79,111 @@ export default function EmployeeCabinet({ onNavigate }: EmployeeCabinetProps) {
           {/* Profile card */}
           <div className="md:col-span-1 space-y-5">
             <div className="glass gradient-border rounded-2xl p-6 text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-4xl">
-                👩‍💼
-              </div>
-              <h2 className="font-body font-semibold text-white text-lg">{profile.name}</h2>
-              <p className="text-violet-400 font-body text-sm mb-1">{profile.role}</p>
-              <p className="text-white/40 font-body text-xs mb-4">
-                {profile.generation} поколение · с {profile.joined} года
-              </p>
-              {profile.warnings > 0 && (
-                <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-4">
-                  <Icon name="AlertTriangle" size={13} className="text-yellow-400" />
-                  <span className="text-yellow-400 font-body text-xs">
-                    {profile.warnings} действующий выговор
-                  </span>
-                </div>
-              )}
-              <button className="w-full py-2 glass rounded-lg text-white/60 font-body text-sm hover:text-white/80 hover:bg-white/10 transition-all">
-                Редактировать профиль
-              </button>
-            </div>
-
-            <div className="glass gradient-border rounded-2xl p-5">
-              <h3 className="font-body font-semibold text-white text-sm mb-3">Контакты</h3>
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-3">
-                  <Icon name="Mail" size={14} className="text-white/40 flex-shrink-0" />
-                  <span className="text-white/60 font-body text-xs">{profile.email}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Icon name="Phone" size={14} className="text-white/40 flex-shrink-0" />
-                  <span className="text-white/60 font-body text-xs">{profile.phone}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass gradient-border rounded-2xl p-5">
-              <h3 className="font-body font-semibold text-white text-sm mb-3">Достижения</h3>
-              <div className="space-y-2">
-                {profile.achievements.map((ach, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-violet-400 text-xs mt-0.5">✦</span>
-                    <span className="text-white/60 font-body text-xs leading-relaxed">{ach}</span>
+              {editMode ? (
+                <>
+                  <p className="text-white/50 font-body text-xs mb-2">Выберите аватар</p>
+                  <div className="grid grid-cols-6 gap-1.5 mb-4">
+                    {avatarOptions.map(av => (
+                      <button
+                        key={av}
+                        onClick={() => setForm(f => ({ ...f, avatar: av }))}
+                        className={`text-2xl p-1 rounded-lg transition-all ${form.avatar === av ? 'bg-violet-500/30 ring-1 ring-violet-400' : 'hover:bg-white/10'}`}
+                      >
+                        {av}
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-3 text-left">
+                    <div>
+                      <label className="block text-white/50 font-body text-xs mb-1">Имя</label>
+                      <input
+                        value={form.name ?? ''}
+                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/50 font-body text-xs mb-1">Роль в семье</label>
+                      <input
+                        value={form.role ?? ''}
+                        onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                        className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button onClick={saveEdit} className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-lg hover:opacity-90">Сохранить</button>
+                    <button onClick={() => setEditMode(false)} className="flex-1 py-2 glass text-white/60 font-body text-sm rounded-lg hover:text-white/80">Отмена</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-4xl">
+                    {member.avatar || '👤'}
+                  </div>
+                  <h2 className="font-body font-semibold text-white text-lg">{member.name}</h2>
+                  <p className="text-violet-400 font-body text-sm mb-1">{member.role}</p>
+                  <p className="text-white/40 font-body text-xs mb-4">
+                    {genRoman[member.generation] ?? member.generation} поколение
+                  </p>
+                  {member.warnings > 0 && (
+                    <div className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-4">
+                      <Icon name="AlertTriangle" size={13} className="text-yellow-400" />
+                      <span className="text-yellow-400 font-body text-xs">
+                        {member.warnings} действующий выговор
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={openEdit}
+                    className="w-full py-2 bg-gradient-to-r from-blue-600/30 to-violet-600/30 border border-violet-500/30 rounded-lg text-violet-300 font-body text-sm hover:from-blue-600/50 hover:to-violet-600/50 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Icon name="Pencil" size={13} /> Редактировать профиль
+                  </button>
+                </>
+              )}
             </div>
+
+            {/* Bio card */}
+            {!editMode && (
+              <div className="glass gradient-border rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-body font-semibold text-white text-sm">О себе</h3>
+                </div>
+                {member.bio ? (
+                  <p className="text-white/60 font-body text-sm leading-relaxed">{member.bio}</p>
+                ) : (
+                  <p className="text-white/25 font-body text-xs italic">Биография не заполнена</p>
+                )}
+              </div>
+            )}
+
+            {editMode && (
+              <div className="glass gradient-border rounded-2xl p-5">
+                <label className="block text-white/50 font-body text-xs mb-2">О себе</label>
+                <textarea
+                  rows={4}
+                  value={form.bio ?? ''}
+                  onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                  placeholder="Расскажите о себе..."
+                  className="w-full glass rounded-lg px-3 py-2 text-white placeholder-white/25 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 resize-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* Main content */}
           <div className="md:col-span-2 space-y-5">
             <div className="glass gradient-border rounded-2xl p-6">
-              <h3 className="font-body font-semibold text-white mb-3">О себе</h3>
-              <p className="text-white/60 font-body text-sm leading-relaxed">{profile.bio}</p>
-            </div>
-
-            <div className="glass gradient-border rounded-2xl p-6">
               <h3 className="font-body font-semibold text-white mb-4">Мои события</h3>
               <div className="space-y-3">
                 {myEvents.map((event, i) => (
                   <div key={i} className="flex items-center gap-4 py-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      event.status === 'upcoming' ? 'bg-blue-400' : 'bg-white/20'
-                    }`} />
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${event.status === 'upcoming' ? 'bg-blue-400' : 'bg-white/20'}`} />
                     <div className="flex-1">
                       <span className="text-white font-body text-sm">{event.title}</span>
                     </div>
-                    <span className={`font-body text-xs ${
-                      event.status === 'upcoming' ? 'text-blue-400' : 'text-white/30'
-                    }`}>
+                    <span className={`font-body text-xs ${event.status === 'upcoming' ? 'text-blue-400' : 'text-white/30'}`}>
                       {event.date}
                     </span>
                   </div>
@@ -130,18 +192,24 @@ export default function EmployeeCabinet({ onNavigate }: EmployeeCabinetProps) {
             </div>
 
             <div className="glass gradient-border rounded-2xl p-6">
-              <h3 className="font-body font-semibold text-white mb-4">Статистика участия</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { value: '12', label: 'Встреч посещено' },
-                  { value: '8', label: 'Лет в организации' },
-                  { value: '3', label: 'Проекта завершено' },
-                ].map((stat, i) => (
-                  <div key={i} className="text-center p-4 bg-white/5 rounded-xl">
-                    <div className="font-display text-3xl gradient-text font-semibold">{stat.value}</div>
-                    <div className="text-white/40 font-body text-xs mt-1">{stat.label}</div>
-                  </div>
-                ))}
+              <h3 className="font-body font-semibold text-white mb-4">Состав семьи</h3>
+              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl">
+                <div className="flex -space-x-2">
+                  {members.slice(0, 5).map(m => (
+                    <div key={m.id} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 border-2 border-background flex items-center justify-center text-sm">
+                      {m.avatar || '👤'}
+                    </div>
+                  ))}
+                  {members.length > 5 && (
+                    <div className="w-8 h-8 rounded-full bg-white/10 border-2 border-background flex items-center justify-center text-white/60 font-body text-xs">
+                      +{members.length - 5}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-white font-body text-sm font-medium">{members.length} участников</p>
+                  <p className="text-white/40 font-body text-xs">{members.filter(m => m.status === 'active').length} активных</p>
+                </div>
               </div>
             </div>
 
@@ -149,9 +217,9 @@ export default function EmployeeCabinet({ onNavigate }: EmployeeCabinetProps) {
               <h3 className="font-body font-semibold text-white mb-4">Уведомления</h3>
               <div className="space-y-3">
                 {[
-                  { text: 'Летний съезд — подтвердите участие', type: 'info', time: '2 часа назад' },
+                  { text: 'Летний съезд 2026 — подтвердите участие', type: 'info', time: '2 часа назад' },
                   { text: 'Новый документ в архиве семьи', type: 'update', time: '1 день назад' },
-                  { text: 'Выговор от лидера: нарушение регламента', type: 'warning', time: '3 дня назад' },
+                  ...(member.warnings > 0 ? [{ text: `Выговор от лидера: ${member.warnings} шт.`, type: 'warning', time: 'Недавно' }] : []),
                 ].map((notif, i) => (
                   <div key={i} className={`flex gap-3 p-3 rounded-xl border ${
                     notif.type === 'warning'

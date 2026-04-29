@@ -16,11 +16,12 @@ const pagesWithNav = ['home', 'history', 'members', 'events', 'garage', 'gallery
 export default function Index() {
   const [page, setPage] = useState('home');
   const [role, setRole] = useState<'leader' | 'employee' | null>(null);
+  const [memberId, setMemberId] = useState<number | undefined>(undefined);
 
-  const handleNavigate = (p: string) => {
+  const handleNavigate = (p: string, mid?: number) => {
     if (p === 'leader-cabinet') setRole('leader');
-    if (p === 'employee-cabinet') setRole('employee');
-    if (p === 'home' || p === 'cabinet') setRole(null);
+    if (p === 'employee-cabinet') { setRole('employee'); setMemberId(mid); }
+    if (p === 'home' || p === 'cabinet') { setRole(null); setMemberId(undefined); }
     setPage(p);
   };
 
@@ -35,7 +36,7 @@ export default function Index() {
       case 'contact': return <ContactPage />;
       case 'cabinet': return <LoginPage onNavigate={handleNavigate} />;
       case 'leader-cabinet': return <LeaderCabinet onNavigate={handleNavigate} />;
-      case 'employee-cabinet': return <EmployeeCabinet onNavigate={handleNavigate} />;
+      case 'employee-cabinet': return <EmployeeCabinet onNavigate={handleNavigate} memberId={memberId} />;
       default: return <HomePage onNavigate={handleNavigate} />;
     }
   };
@@ -60,7 +61,7 @@ export default function Index() {
             </div>
             <div className="text-center">
               <p className="text-white/30 font-body text-xs">
-                © 2025 Family Morris Organization · Все права защищены
+                © 2026 Family Morris Organization · Все права защищены
               </p>
               <p className="text-white/20 font-body text-xs mt-1">
                 Разработчик:{' '}

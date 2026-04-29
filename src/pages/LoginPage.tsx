@@ -1,21 +1,39 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { getMembers } from '@/store/members';
 
 interface LoginPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, memberId?: number) => void;
 }
 
 export default function LoginPage({ onNavigate }: LoginPageProps) {
   const [role, setRole] = useState<'leader' | 'employee' | null>(null);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [showPass, setShowPass] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (role === 'leader') {
       onNavigate('leader-cabinet');
+      return;
+    }
+
+    // Ищем участника по имени (или части имени) и паролю
+    const members = getMembers();
+    const found = members.find(m => {
+      const nameMatch = m.name.toLowerCase().includes(login.trim().toLowerCase()) || login.trim() === '';
+      const passMatch = m.password === password || (m.password === '' && password === '');
+      return nameMatch && passMatch;
+    });
+
+    if (found) {
+      onNavigate('employee-cabinet', found.id);
     } else {
-      onNavigate('employee-cabinet');
+      setError('Участник не найден или неверный пароль');
     }
   };
 
@@ -81,7 +99,7 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
                   {role === 'leader' ? 'Кабинет лидера' : 'Кабинет сотрудника'}
                 </h2>
                 <button
-                  onClick={() => setRole(null)}
+                  onClick={() => { setRole(null); setError(''); }}
                   className="text-white/40 font-body text-xs hover:text-white/60 transition-colors"
                 >
                   Изменить →
@@ -91,25 +109,44 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-white/60 font-body text-sm mb-2">Логин</label>
+                <label className="block text-white/60 font-body text-sm mb-2">
+                  {role === 'leader' ? 'Логин' : 'Имя участника'}
+                </label>
                 <input
                   type="text"
-                  placeholder="morris_user"
+                  placeholder={role === 'leader' ? 'morris_leader' : 'Например: Сара'}
                   value={login}
-                  onChange={e => setLogin(e.target.value)}
+                  onChange={e => { setLogin(e.target.value); setError(''); }}
                   className="w-full glass rounded-xl px-4 py-3 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
                 />
               </div>
               <div>
                 <label className="block text-white/60 font-body text-sm mb-2">Пароль</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full glass rounded-xl px-4 py-3 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
-                />
+                <div className="relative">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setError(''); }}
+                    className="w-full glass rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    <Icon name={showPass ? 'EyeOff' : 'Eye'} size={15} />
+                  </button>
+                </div>
               </div>
+
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <Icon name="AlertCircle" size={14} className="text-red-400 flex-shrink-0" />
+                  <p className="text-red-400 font-body text-sm">{error}</p>
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body font-medium rounded-xl hover:opacity-90 transition-all hover:scale-[1.01] mt-2"
