@@ -1,5 +1,6 @@
 import { useMembers } from '@/store/members';
 import { useOrgSettings } from '@/store/orgSettings';
+import { useSiteContent } from '@/store/siteContent';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
@@ -8,6 +9,7 @@ interface HomePageProps {
 export default function HomePage({ onNavigate }: HomePageProps) {
   const [members] = useMembers();
   const [org] = useOrgSettings();
+  const [site] = useSiteContent();
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -30,13 +32,13 @@ export default function HomePage({ onNavigate }: HomePageProps) {
             Семейная организация
           </p>
           <h1 className="font-display text-6xl md:text-8xl font-light text-white mb-4 leading-none">
-            Family
+            {site.heroTitle}
           </h1>
           <h1 className="font-display text-6xl md:text-8xl font-semibold gradient-text mb-8 leading-none">
-            Morris
+            {site.heroSubtitle}
           </h1>
           <p className="text-white/60 font-body text-lg max-w-xl mx-auto mb-12 leading-relaxed">
-            Единство, традиции и взаимная поддержка — основа нашей семьи. Мы строим будущее вместе.
+            {site.heroDescription}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button

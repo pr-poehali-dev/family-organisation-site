@@ -4,6 +4,7 @@ import { useMembers } from '@/store/members';
 import { useApplications, updateApplicationStatus, type Application } from '@/store/applications';
 import { useOrgSettings } from '@/store/orgSettings';
 import { useEvents, type FamilyEvent } from '@/store/events';
+import { useSiteContent, type SiteContent } from '@/store/siteContent';
 
 type Photo = {
   id: number;
@@ -75,6 +76,11 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
   const [org, setOrg] = useOrgSettings();
   const [orgEdit, setOrgEdit] = useState(false);
   const [orgForm, setOrgForm] = useState(org);
+
+  // Site content
+  const [siteContent, setSiteContent] = useSiteContent();
+  const [contentForm, setContentForm] = useState<SiteContent>(siteContent);
+  const [contentSection, setContentSection] = useState<'main' | 'contacts' | 'history' | 'values' | 'timeline'>('main');
 
   // Cars
   const [carList, setCarList] = useState<Car[]>(initialCars);
@@ -211,6 +217,7 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
     { id: 'members', label: 'Состав', icon: 'Users' },
     { id: 'applications', label: 'Заявки', icon: 'ClipboardList', badge: pendingCount },
     { id: 'events', label: 'События', icon: 'Calendar' },
+    { id: 'content', label: 'Контент', icon: 'FileEdit' },
     { id: 'garage', label: 'Автопарк', icon: 'Car' },
     { id: 'photos', label: 'Фотоархив', icon: 'Image' },
     { id: 'warnings', label: 'Выговора', icon: 'AlertTriangle' },
@@ -705,6 +712,171 @@ export default function LeaderCabinet({ onNavigate }: LeaderCabinetProps) {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── CONTENT ── */}
+        {activeTab === 'content' && (
+          <div className="animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-2xl text-white">Редактор контента сайта</h2>
+              <button
+                onClick={() => { setSiteContent(contentForm); }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-lg hover:opacity-90"
+              >
+                <Icon name="Save" size={14} /> Сохранить всё
+              </button>
+            </div>
+
+            {/* Section tabs */}
+            <div className="flex flex-wrap gap-2 mb-6 glass rounded-xl p-1.5 w-fit">
+              {([
+                { id: 'main', label: 'Главная' },
+                { id: 'contacts', label: 'Контакты' },
+                { id: 'history', label: 'История' },
+                { id: 'values', label: 'Ценности' },
+                { id: 'timeline', label: 'Хронология' },
+              ] as const).map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setContentSection(s.id)}
+                  className={`px-3 py-2 rounded-lg font-body text-sm transition-all ${contentSection === s.id ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white' : 'text-white/50 hover:text-white/80'}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="glass gradient-border rounded-2xl p-6">
+              {/* Главная */}
+              {contentSection === 'main' && (
+                <div className="space-y-4">
+                  <p className="text-white/40 font-body text-xs uppercase tracking-wider mb-4">Текст на главной странице</p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white/60 font-body text-xs mb-1.5">Название (строка 1)</label>
+                      <input value={contentForm.heroTitle} onChange={e => setContentForm(f => ({ ...f, heroTitle: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                    </div>
+                    <div>
+                      <label className="block text-white/60 font-body text-xs mb-1.5">Название (строка 2, gradient)</label>
+                      <input value={contentForm.heroSubtitle} onChange={e => setContentForm(f => ({ ...f, heroSubtitle: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-white/60 font-body text-xs mb-1.5">Описание под заголовком</label>
+                    <textarea rows={3} value={contentForm.heroDescription} onChange={e => setContentForm(f => ({ ...f, heroDescription: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 resize-none" />
+                  </div>
+                </div>
+              )}
+
+              {/* Контакты */}
+              {contentSection === 'contacts' && (
+                <div className="space-y-4">
+                  <p className="text-white/40 font-body text-xs uppercase tracking-wider mb-4">Контактная информация</p>
+                  {[
+                    { label: 'Email', key: 'contactEmail' as keyof SiteContent, placeholder: 'org@email.com' },
+                    { label: 'Телефон', key: 'contactPhone' as keyof SiteContent, placeholder: '+7 (999) 000-00-00' },
+                    { label: 'Адрес (значение)', key: 'contactAddress' as keyof SiteContent, placeholder: 'Офис Приволжка' },
+                    { label: 'Адрес (подпись)', key: 'contactAddressLabel' as keyof SiteContent, placeholder: 'Офис организации' },
+                    { label: 'Telegram', key: 'contactTelegram' as keyof SiteContent, placeholder: '@username' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label className="block text-white/60 font-body text-xs mb-1.5">{f.label}</label>
+                      <input
+                        value={contentForm[f.key] as string}
+                        onChange={e => setContentForm(cf => ({ ...cf, [f.key]: e.target.value }))}
+                        placeholder={f.placeholder}
+                        className="w-full glass rounded-xl px-4 py-2.5 text-white placeholder-white/25 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10"
+                      />
+                    </div>
+                  ))}
+                  <p className="text-white/30 font-body text-xs">Пустые поля не отображаются на сайте</p>
+                </div>
+              )}
+
+              {/* История */}
+              {contentSection === 'history' && (
+                <div className="space-y-4">
+                  <p className="text-white/40 font-body text-xs uppercase tracking-wider mb-4">Страница истории</p>
+                  <div>
+                    <label className="block text-white/60 font-body text-xs mb-1.5">Подзаголовок страницы</label>
+                    <input value={contentForm.historySubtitle} onChange={e => setContentForm(f => ({ ...f, historySubtitle: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                  </div>
+                  <div>
+                    <label className="block text-white/60 font-body text-xs mb-1.5">Описание истории</label>
+                    <textarea rows={3} value={contentForm.historyDescription} onChange={e => setContentForm(f => ({ ...f, historyDescription: e.target.value }))} className="w-full glass rounded-xl px-4 py-2.5 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 resize-none" />
+                  </div>
+                </div>
+              )}
+
+              {/* Ценности */}
+              {contentSection === 'values' && (
+                <div className="space-y-4">
+                  <p className="text-white/40 font-body text-xs uppercase tracking-wider mb-4">Ценности организации</p>
+                  {contentForm.values.map((val, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-4 space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Эмодзи</label>
+                          <input value={val.emoji} onChange={e => setContentForm(f => ({ ...f, values: f.values.map((v, j) => j === i ? { ...v, emoji: e.target.value } : v) }))} className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 text-center" />
+                        </div>
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Название</label>
+                          <input value={val.title} onChange={e => setContentForm(f => ({ ...f, values: f.values.map((v, j) => j === i ? { ...v, title: e.target.value } : v) }))} className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Описание</label>
+                          <input value={val.desc} onChange={e => setContentForm(f => ({ ...f, values: f.values.map((v, j) => j === i ? { ...v, desc: e.target.value } : v) }))} className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setContentForm(f => ({ ...f, values: [...f.values, { emoji: '⭐', title: '', desc: '' }] }))} className="flex items-center gap-2 px-4 py-2 glass rounded-lg text-white/60 font-body text-sm hover:text-white/80 transition-colors">
+                    <Icon name="Plus" size={13} /> Добавить ценность
+                  </button>
+                </div>
+              )}
+
+              {/* Хронология */}
+              {contentSection === 'timeline' && (
+                <div className="space-y-4">
+                  <p className="text-white/40 font-body text-xs uppercase tracking-wider mb-4">Хронология истории</p>
+                  {contentForm.timeline.map((item, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white/50 font-body text-xs">Запись {i + 1}</span>
+                        <button onClick={() => setContentForm(f => ({ ...f, timeline: f.timeline.filter((_, j) => j !== i) }))} className="p-1 text-red-400/60 hover:text-red-400 transition-colors">
+                          <Icon name="Trash2" size={13} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Год</label>
+                          <input value={item.year} onChange={e => setContentForm(f => ({ ...f, timeline: f.timeline.map((t, j) => j === i ? { ...t, year: e.target.value } : t) }))} placeholder="2025" className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Событие</label>
+                          <input value={item.title} onChange={e => setContentForm(f => ({ ...f, timeline: f.timeline.map((t, j) => j === i ? { ...t, title: e.target.value } : t) }))} placeholder="Основание" className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                        <div>
+                          <label className="block text-white/50 font-body text-xs mb-1">Описание</label>
+                          <input value={item.desc} onChange={e => setContentForm(f => ({ ...f, timeline: f.timeline.map((t, j) => j === i ? { ...t, desc: e.target.value } : t) }))} placeholder="Что произошло..." className="w-full glass rounded-lg px-3 py-2 text-white font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setContentForm(f => ({ ...f, timeline: [...f.timeline, { year: '', title: '', desc: '' }] }))} className="flex items-center gap-2 px-4 py-2 glass rounded-lg text-white/60 font-body text-sm hover:text-white/80 transition-colors">
+                    <Icon name="Plus" size={13} /> Добавить запись
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6 pt-5 border-t border-white/10">
+                <button onClick={() => { setSiteContent(contentForm); }} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-body text-sm rounded-xl hover:opacity-90">
+                  <Icon name="Save" size={14} /> Сохранить изменения
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

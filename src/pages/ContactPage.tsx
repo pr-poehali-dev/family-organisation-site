@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
+import { useSiteContent } from '@/store/siteContent';
 
 export default function ContactPage() {
+  const [site] = useSiteContent();
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sent, setSent] = useState(false);
 
@@ -9,6 +11,33 @@ export default function ContactPage() {
     e.preventDefault();
     setSent(true);
   };
+
+  const contacts = [
+    site.contactEmail && {
+      icon: 'Mail',
+      label: 'Email организации',
+      value: site.contactEmail,
+      sub: 'Ответим в течение 24 часов',
+    },
+    site.contactPhone && {
+      icon: 'Phone',
+      label: 'Телефон лидера',
+      value: site.contactPhone,
+      sub: 'Пн–Пт, 10:00–20:00',
+    },
+    {
+      icon: 'MapPin',
+      label: 'Основной адрес',
+      value: site.contactAddress || 'Офис Приволжка',
+      sub: site.contactAddressLabel || 'Офис организации',
+    },
+    site.contactTelegram && {
+      icon: 'MessageCircle',
+      label: 'Telegram',
+      value: site.contactTelegram,
+      sub: 'Быстрая связь',
+    },
+  ].filter(Boolean) as { icon: string; label: string; value: string; sub: string }[];
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -19,7 +48,7 @@ export default function ContactPage() {
             Написать <span className="gradient-text">нам</span>
           </h1>
           <p className="text-white/50 font-body text-lg max-w-xl mx-auto">
-            Есть вопросы о семье Morris? Хотите вступить или узнать больше? Мы всегда на связи.
+            Есть вопросы об организации? Хотите вступить или узнать больше? Мы всегда на связи.
           </p>
         </div>
 
@@ -28,32 +57,7 @@ export default function ContactPage() {
           <div>
             <h2 className="font-display text-3xl text-white mb-8">Способы связи</h2>
             <div className="space-y-5">
-              {[
-                {
-                  icon: 'Mail',
-                  label: 'Email организации',
-                  value: 'contact@family-morris.org',
-                  sub: 'Ответим в течение 24 часов',
-                },
-                {
-                  icon: 'Phone',
-                  label: 'Телефон лидера',
-                  value: '+7 (999) 123-45-67',
-                  sub: 'Пн–Пт, 10:00–20:00',
-                },
-                {
-                  icon: 'MapPin',
-                  label: 'Основной адрес',
-                  value: 'Москва, ул. Морриса, 1',
-                  sub: 'Усадьба семьи',
-                },
-                {
-                  icon: 'MessageCircle',
-                  label: 'Telegram',
-                  value: '@family_morris',
-                  sub: 'Быстрая связь',
-                },
-              ].map((item, i) => (
+              {contacts.map((item, i) => (
                 <div key={i} className="glass gradient-border rounded-xl p-4 flex items-center gap-4 glass-hover">
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-violet-600/20 flex items-center justify-center flex-shrink-0">
                     <Icon name={item.icon} fallback="Circle" size={18} className="text-violet-400" />
@@ -102,8 +106,8 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {[
-                  { label: 'Ваше имя', key: 'name', type: 'text', placeholder: 'Иван Иванов' },
-                  { label: 'Email', key: 'email', type: 'email', placeholder: 'ivan@mail.ru' },
+                  { label: 'Ваше имя', key: 'name', type: 'text', placeholder: 'Ваше имя' },
+                  { label: 'Email', key: 'email', type: 'email', placeholder: 'ваш@email.com' },
                 ].map((field) => (
                   <div key={field.key}>
                     <label className="block text-white/60 font-body text-sm mb-2">{field.label}</label>
@@ -120,7 +124,7 @@ export default function ContactPage() {
                   <label className="block text-white/60 font-body text-sm mb-2">Сообщение</label>
                   <textarea
                     rows={5}
-                    placeholder="Расскажите о себе или задайте вопрос..."
+                    placeholder="Ваш вопрос или сообщение..."
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     className="w-full glass rounded-xl px-4 py-3 text-white placeholder-white/30 font-body text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 border border-white/10 resize-none"
